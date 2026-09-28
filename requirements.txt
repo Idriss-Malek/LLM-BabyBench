@@ -1,0 +1,8 @@
+numpy
+matplotlib
+pyyaml
+datasets
+openai
+anthropic
+python-dotenv
+gymnasium
