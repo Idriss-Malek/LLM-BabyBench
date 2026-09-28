@@ -75,3 +75,7 @@ In the same directory, run:
 ```
 python3 -m pip install -e .
 ```
+
+## License
+
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
