@@ -18,10 +18,19 @@ tasks = ["predict", "plan", "decompose"]  # add "fpi" in a separate pass with fo
 formatters = ["structured"]  # ["narrative", "structured", "json", "fpi_structured", "fpi_narrative", "fpi_json"] 
 prompters = ["zero_shot"]  # ["zero_shot", "few_shot", "cot", "tot"]
 
-# LLMs 
-# Active set: non-reasoning DeepInfra-hosted instruct models only.
-# Slugs verified against deepinfra.com model pages (May 2026).
+# LLMs
+# Active set: frontier models used in the reported experiments + DeepInfra instruct models.
 llms = [
+    # --- Frontier models used in the reported experiments ---
+    # Run with reasoning off: the anthropic/openai providers send only temperature and
+    # max_tokens, no thinking or reasoning_effort parameter.
+    # The pass@3 re-runs of missing samples were made through OpenRouter with the equivalent
+    # slugs anthropic/claude-sonnet-4.6, anthropic/claude-opus-4.6 and openai/gpt-5.4.
+    {"name": "anthropic", "model": "claude-sonnet-4-6"},
+    {"name": "anthropic", "model": "claude-opus-4-6"},
+    {"name": "openai",    "model": "gpt-5.4"},
+
+    # --- DeepInfra instruct models (slugs verified against deepinfra.com, May 2026) ---
     {"name": "deepinfra", "model": "Qwen/Qwen2.5-72B-Instruct"},
     {"name": "deepinfra", "model": "moonshotai/Kimi-K2.5"},
     {"name": "deepinfra", "model": "meta-llama/Llama-4-Scout-17B-16E-Instruct"},
