@@ -1,0 +1,22 @@
+env:
+  env_name: CustomBabyAI-GoToRedBall-Small-7Dists-v0
+  seed: 2
+eval:
+  evaluator: plan
+  task: plan
+inputs:
+  formatter: structured
+  processor: omniscient_babyai_bot
+  prompter: zero_shot
+llm:
+  max_tokens: 8192
+  model: gpt-5.4
+  name: openai
+  reasoning_effort: high
+  system_prompt: ''
+  temperature: 0.0
+output:
+  log_every: 10
+  path: results/openai_gpt-5.4_CustomBabyAI-GoToRedBall-Small-7Dists-v0_plan_zero_shot_structured_seed2_efforthigh.json
+  save_prompts: true
+  save_raw_llm_output: true

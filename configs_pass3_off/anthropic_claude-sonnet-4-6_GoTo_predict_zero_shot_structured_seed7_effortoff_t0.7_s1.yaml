@@ -1,0 +1,22 @@
+env:
+  env_name: BabyAI-GoTo-v0
+  seed: 7
+eval:
+  evaluator: predict
+  task: predict
+inputs:
+  formatter: structured
+  processor: omniscient_babyai_bot
+  prompter: zero_shot
+llm:
+  max_tokens: 4096
+  model: claude-sonnet-4-6
+  name: anthropic
+  reasoning_effort: 'off'
+  system_prompt: ''
+  temperature: 0.7
+output:
+  log_every: 10
+  path: results/anthropic_claude-sonnet-4-6_GoTo_predict_zero_shot_structured_seed7_effortoff_t0.7_s1.json
+  save_prompts: true
+  save_raw_llm_output: true
