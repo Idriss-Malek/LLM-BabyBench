@@ -11,11 +11,17 @@ load_dotenv()
 
 class OpenAI(AbstractLLM):
     
-    def __init__(self, model: str = "gpt-5-thinking", temperature: float = 0.0, max_tokens: int = 8192, system_prompt: str = ""):
+    _VALID_EFFORTS = {"off", "minimal", "low", "medium", "high", "xhigh"}
+
+    def __init__(self, model: str = "gpt-5-thinking", temperature: float = 0.0, max_tokens: int = 8192, system_prompt: str = "", reasoning_effort: str = "off"):
         self.model = model
         self.temperature = temperature
         self.max_tokens = max_tokens
         self.system_prompt = system_prompt
+
+        if reasoning_effort not in self._VALID_EFFORTS:
+            raise ValueError(f"reasoning_effort must be one of {sorted(self._VALID_EFFORTS)}, got {reasoning_effort!r}")
+        self.reasoning_effort = reasoning_effort
         
         # Initialize conversation history
         self.conversation_history: List[Dict[str, str]] = []
@@ -45,12 +51,18 @@ class OpenAI(AbstractLLM):
             # Prepare messages for API call
             messages = self._prepare_messages(use_history)
             
-            response = self.client.chat.completions.create(
+            create_kwargs = dict(
                 model=self.model,
                 messages=messages,
-                temperature=self.temperature,
                 max_completion_tokens=self.max_tokens,
             )
+            if self.reasoning_effort != "off":
+                # GPT-5 reasoning models reject non-default temperature.
+                create_kwargs["reasoning_effort"] = self.reasoning_effort
+            else:
+                create_kwargs["temperature"] = self.temperature
+
+            response = self.client.chat.completions.create(**create_kwargs)
             
             assistant_response = response.choices[0].message.content.strip()
             

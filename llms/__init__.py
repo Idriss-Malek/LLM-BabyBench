@@ -4,9 +4,13 @@ from llms.dummy import DummyLLM
 from llms.openai import OpenAI
 from llms.anthropic import Anthropic
 from llms.deepinfra import DeepInfra
+from llms.openrouter import OpenRouter
 
 def get_llm(name: str, model_name: str = None, **kwargs):
-    
+
+    if model_name is not None:
+        kwargs["model"] = model_name
+
     if name == "dummy":
         return DummyLLM()
     elif name == "openai":
@@ -15,6 +19,8 @@ def get_llm(name: str, model_name: str = None, **kwargs):
         return Anthropic(**kwargs)
     elif name == "deepinfra":
         return DeepInfra(**kwargs)
+    elif name == "openrouter":
+        return OpenRouter(**kwargs)
     else:
         raise ValueError(f"Unknown LLM name: {name}")
     
