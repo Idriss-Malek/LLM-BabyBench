@@ -11,11 +11,25 @@ load_dotenv()
 
 class Anthropic(AbstractLLM):
 
-    def __init__(self, model: str = "claude-3-5-sonnet-20241022", temperature: float = 0.0, max_tokens: int = 8192, system_prompt: str = ""):
+    _EFFORT_TO_BUDGET = {
+        "off": 0,
+        "low": 2048,
+        "medium": 8192,
+        "high": 24576,
+    }
+
+    def __init__(self, model: str = "claude-3-5-sonnet-20241022", temperature: float = 0.0, max_tokens: int = 8192, system_prompt: str = "", reasoning_effort: str = "off"):
         self.model = model
         self.temperature = temperature
         self.max_tokens = max_tokens
         self.system_prompt = system_prompt
+
+        if reasoning_effort not in self._EFFORT_TO_BUDGET:
+            raise ValueError(f"reasoning_effort must be one of {list(self._EFFORT_TO_BUDGET)}, got {reasoning_effort!r}")
+        self.reasoning_effort = reasoning_effort
+        self._thinking_budget = self._EFFORT_TO_BUDGET[reasoning_effort]
+        if self._thinking_budget > 0 and self.max_tokens < self._thinking_budget + 4096:
+            self.max_tokens = self._thinking_budget + 4096
         
         # Initialize conversation history
         self.conversation_history: List[Dict[str, str]] = []
@@ -48,15 +62,33 @@ class Anthropic(AbstractLLM):
             else:
                 messages = [{"role": "user", "content": prompt}]
             
-            response = self.client.messages.create(
+            create_kwargs = dict(
                 model=self.model,
                 messages=messages,
                 system=self.system_prompt if self.system_prompt else "",
-                temperature=self.temperature,
-                max_tokens=self.max_tokens
+                max_tokens=self.max_tokens,
             )
-            
-            assistant_response = response.content[0].text.strip()
+            if self._thinking_budget > 0:
+                create_kwargs["thinking"] = {"type": "enabled", "budget_tokens": self._thinking_budget}
+                create_kwargs["temperature"] = 1
+            else:
+                create_kwargs["temperature"] = self.temperature
+
+            # Anthropic SDK rejects non-streaming requests that may exceed 10
+            # minutes; high-effort thinking (24k budget) on complex tasks can.
+            # Low/medium budgets stay well under, so only stream for high.
+            if self._thinking_budget > 16384:
+                with self.client.messages.stream(**create_kwargs) as stream:
+                    final_message = stream.get_final_message()
+                content = final_message.content
+            else:
+                response = self.client.messages.create(**create_kwargs)
+                content = response.content
+
+            assistant_response = next(
+                (block.text for block in content if getattr(block, "type", None) == "text"),
+                ""
+            ).strip()
             
             # Add assistant response to history, or drop this turn entirely in
             # stateless mode so history does not accumulate orphan user messages.

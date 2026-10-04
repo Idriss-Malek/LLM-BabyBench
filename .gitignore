@@ -180,6 +180,7 @@ Minigrid/
 
 
 configs/
+configs_*/
 fpi_configs/
 
 results/
