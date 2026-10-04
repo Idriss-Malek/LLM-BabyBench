@@ -89,9 +89,6 @@ llms = [
 # Frontier reasoning models — swept across reasoning_efforts below.
 # Kept separate from `llms` so non-reasoning instruct models don't get
 # a spurious reasoning_effort key (which they wouldn't accept anyway).
-# The pass@3 re-runs of missing samples went through OpenRouter (llms/openrouter.py) with the
-# equivalent slugs anthropic/claude-sonnet-4.6, anthropic/claude-opus-4.6 and openai/gpt-5.4;
-# see generate_rerun_openrouter.py.
 frontier_llms = [
     {"name": "anthropic", "model": "claude-sonnet-4-6"},
     {"name": "anthropic", "model": "claude-opus-4-6"},
