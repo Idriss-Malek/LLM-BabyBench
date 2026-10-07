@@ -7,8 +7,13 @@ Reproduces, file for file, the configs used in the reported experiments:
                                      x reasoning effort off/low/medium/high
                                      x 3 tasks x 16 levels x 20 seeds, T=0.0
   python create_yamls.py --pass3
-      -> configs_pass3_off/   8,640  effort off, T=0.7, 3 samples per config (_t0.7_s0.._s2);
-                                     the set behind the pass@1 / pass@3 tables
+      -> configs_pass3_off/  20,160  effort off, T=0.7, 3 samples per config (_t0.7_s0.._s2);
+                                     the set behind the pass@1 / pass@3 tables: the three
+                                     models above (8,640) plus the four open-weight DeepInfra
+                                     models (11,520). The DeepInfra configs are written from
+                                     the protocol in the paper's appendix (T=0.7, 3 samples,
+                                     per-level caps, 16384 tokens for Kimi-K2.5), not restored
+                                     from the original files.
   python create_yamls.py --models claude-sonnet-4-6 --output_dir configs_sonnet                      (3,840)
   python create_yamls.py --models gpt-5.4 --output_dir configs_gpt5                                  (3,840)
   python create_yamls.py --models claude-sonnet-4-6 --efforts off --output_dir configs_sonnet_off2   (960)
@@ -60,12 +65,12 @@ formatters = ["structured"]  # ["narrative", "structured", "json", "fpi_structur
 prompters = ["zero_shot"]  # ["zero_shot", "few_shot", "cot", "tot"]
 
 # LLMs
-# Non-frontier baseline set (disabled — user only wants frontier reasoning models).
+# Open-weight models queried via DeepInfra. Part of the --pass3 set only.
 llms = [
-    # {"name": "deepinfra", "model": "Qwen/Qwen2.5-72B-Instruct"},
-    # {"name": "deepinfra", "model": "moonshotai/Kimi-K2.5"},
-    # {"name": "deepinfra", "model": "meta-llama/Llama-4-Scout-17B-16E-Instruct"},
-    # {"name": "deepinfra", "model": "meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8"},
+    {"name": "deepinfra", "model": "Qwen/Qwen2.5-72B-Instruct"},
+    {"name": "deepinfra", "model": "moonshotai/Kimi-K2.5"},
+    {"name": "deepinfra", "model": "meta-llama/Llama-4-Scout-17B-16E-Instruct"},
+    {"name": "deepinfra", "model": "meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8"},
 
     # --- Disabled for now ---
     # Llama 3.1 instruct (re-enable for the Llama scaling-ladder condition):
@@ -109,6 +114,8 @@ if args.models:
         raise SystemExit(f"Unknown model id(s) {sorted(unknown)}; known: {sorted(known)}")
     llms = [m for m in llms if m["model"] in args.models]
     frontier_llms = [m for m in frontier_llms if m["model"] in args.models]
+if not args.pass3:
+    llms = []  # the effort sweeps (configs/, configs_sonnet/, ...) cover the frontier models only
 
 # Per-level max_tokens cap (overrides task_config["llm_config"]["max_tokens"]
 # when the level appears below). Plan's CustomBabyAI-* levels are unaffected.
@@ -120,6 +127,9 @@ LEVEL_MAX_TOKENS = {
     "Open": 8192, "Synth": 8192, "SynthLoc": 8192,
     "GoToSeq": 8192, "SynthSeq": 8192, "BossLevel": 8192,
 }
+
+# Per-model max_tokens cap, applied after the per-level cap.
+MODEL_MAX_TOKENS = {"moonshotai/Kimi-K2.5": 16384}
 
 # Seeds 
 seeds = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71]
@@ -279,6 +289,8 @@ def create_config(task, task_config, llm, level, prompter, formatter, seed, agen
     }
     if level in LEVEL_MAX_TOKENS:
         llm_block["max_tokens"] = LEVEL_MAX_TOKENS[level]
+    if llm["model"] in MODEL_MAX_TOKENS:
+        llm_block["max_tokens"] = MODEL_MAX_TOKENS[llm["model"]]
     if reasoning_effort is not None:
         llm_block["reasoning_effort"] = reasoning_effort
     if temperature is not None:
